@@ -17,7 +17,7 @@
         ; Pad the array so there is at least one entry for figure and
         ; ground counts.
         (if (= 0 (count acc))
-            [0 0]
+            [cnt 0]
             (conj acc cnt))
         (if (not= curr-seq-value (first a))
             (recur (rest a) 1 (first a) (conj acc cnt))
