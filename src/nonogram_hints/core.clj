@@ -1,6 +1,8 @@
 (ns nonogram-hints.core
   (:require [clojure.data.json :as json]
-            [clojure.tools.cli :refer [parse-opts]])
+            [clojure.string :as string]
+            [clojure.tools.cli :refer [parse-opts]]
+            [nonogram-hints.image :as img])
   (:gen-class))
 
 (defn find-runs
@@ -56,20 +58,38 @@
   (-> (slurp file-name)
       (json/read-str)))
 
+(defn load-image-data
+  "Get the array of 0s and 1s representing the image. The method depends 
+  on the type."
+  [file-name file-type]
+  (if (= file-type "JSON")
+      (load-image-json file-name)
+      (img/get-pixels file-name)))
+
 ;; The CLI entry point and supporting CLI arg parsing code. 
-(def cli-opts-spec [["-g" "--ground"]])
+(def cli-opts-spec [["-g" "--ground" "Calculate runs based on background pixels."]
+                    ["-t" "--type FILETYPE" "The type of the input file, either JSON or PNG."
+                     :default "JSON"
+                     :validate [#(get #{"JSON" "PNG"} % nil) "type must be either \"JSON\" or \"PNG\"."]]])
+
+(defn render-error-msg
+  [errors opts-summary]
+  (string/join \newline ["Errors:" ""
+                         (string/join \newline errors)
+                         ""
+                         "Available options:" "" opts-summary]))
 
 (defn validate-args [args]
   (let [opts (parse-opts args cli-opts-spec)]
     (if (not (:errors opts))
         (assoc (:options opts) :filename (first (:arguments opts)))
-        (throw (.Exception (:errors opts))))))
+        (throw (Exception. (render-error-msg (:errors opts) (:summary opts)))))))
 
 (defn -main [& args]
   (try
     (let [opts (validate-args args)
-          rows (load-image-json (:filename opts))
+          rows (load-image-data (:filename opts) (:type opts))
           find-runs-fn (if (:ground opts) find-ground-runs find-figure-runs)]
       (println (json/write-str (calc-nonogram-hints find-runs-fn rows))))
     (catch Exception e 
-      (println e))))
+      (println (.getMessage e)))))

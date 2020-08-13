@@ -13,8 +13,8 @@ This project builds using [Leiningen](https://leiningen.org/).
 
 There are two ways to run the code:
 
-`lein run [-g] <path to input file>`
+`lein run [-g] [-t JSON|PNG] <path to input file>`
 
 Or:
 
-`java -jar nonogram-hints-0.1.0-SNAPSHOT-standalone.jar [-g] <path to input file>`
+`java -jar nonogram-hints-0.1.0-SNAPSHOT-standalone.jar [-g] [-t JSON|PNG]  <path to input file>`
