@@ -1,5 +1,6 @@
 (ns nonogram-hints.core
   (:require [clojure.data.json :as json]
+            [clojure.java.io :as io]
             [clojure.string :as string]
             [clojure.tools.cli :refer [parse-opts]]
             [nonogram-hints.image :as img])
@@ -50,21 +51,27 @@
            (transpose)
            (map find-runs-fn))})
 
-(defn load-image-json
-  "This loads in the image from a file. It is expected that the
-   data will be in a list of lists, that each value will be 1 or 0,
-   and that each list of values will be the same length."
-  [file-name]
-  (-> (slurp file-name)
+(defmulti load-image-data 
+  "This loads in the image data from an InputStream. It is expected
+   that the data will be in a list of lists, that each value will be 1
+   or 0, and that each list of values will be the same length."
+  (fn [_ file-type] file-type))
+
+(defmethod load-image-data "JSON"
+  [input-stream _]
+  (-> (slurp input-stream)
       (json/read-str)))
 
-(defn load-image-data
+(defmethod load-image-data "PNG"
+  [input-stream _]
+  (img/get-pixels input-stream))
+
+(defn load-image
   "Get the array of 0s and 1s representing the image. The method depends 
   on the type."
   [file-name file-type]
-  (if (= file-type "JSON")
-      (load-image-json file-name)
-      (img/get-pixels file-name)))
+  (with-open [input-stream (io/input-stream file-name)]
+    (load-image-data input-stream file-type)))
 
 ;; The CLI entry point and supporting CLI arg parsing code. 
 (def cli-opts-spec [["-g" "--ground" "Calculate runs based on background pixels."]
@@ -88,7 +95,7 @@
 (defn -main [& args]
   (try
     (let [opts (validate-args args)
-          rows (load-image-data (:filename opts) (:type opts))
+          rows (load-image (:filename opts) (:type opts))
           find-runs-fn (if (:ground opts) find-ground-runs find-figure-runs)]
       (println (json/write-str (calc-nonogram-hints find-runs-fn rows))))
     (catch Exception e 
