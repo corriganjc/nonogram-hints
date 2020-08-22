@@ -61,12 +61,8 @@
   [pixel]
   (if (< 0.5 (pixel->intensity pixel)) 0 1))
 
-(defn load-image [file-name]
-  (ImageIO/read (io/file file-name))) 
-
 (defn get-pixels
-  "Extract pixel data from the image contained in the file indicated by
-   file-name."
-  [file-name]
-  (let [image (load-image file-name)]
+  "Extract pixel data from the image contained in the input-stream"
+  [input-stream]
+  (let [image (ImageIO/read input-stream)]
     (extract-pixel-data image pixel->bit)))
